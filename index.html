@@ -1,0 +1,769 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0" />
+  <meta name="theme-color" content="#0f0f1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <link rel="manifest" href="manifest.json" />
+  <title>NoteAlarm</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0a0a14;
+      --surface: #13131f;
+      --card: #1c1c2e;
+      --accent: #ff6b35;
+      --accent2: #ffb347;
+      --text: #eeeef5;
+      --muted: #7777a0;
+      --border: #2a2a42;
+      --alarm: #ff4466;
+      --green: #3ddc84;
+      --radius: 16px;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    /* HEADER */
+    header {
+      background: linear-gradient(135deg, #13131f 0%, #1c1c2e 100%);
+      padding: 24px 20px 20px;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+    .app-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 28px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .date-badge {
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+    /* TABS */
+    .tabs {
+      display: flex;
+      gap: 8px;
+    }
+    .tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 10px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: var(--card);
+      color: var(--muted);
+    }
+    .tab.active {
+      background: var(--accent);
+      color: white;
+    }
+
+    /* VIEWS */
+    .view { display: none; padding: 20px; animation: fadeIn 0.25s ease; }
+    .view.active { display: block; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* SECTION TITLE */
+    .section-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px;
+      margin-bottom: 16px;
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    /* INPUT CARD */
+    .input-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 18px;
+      margin-bottom: 20px;
+    }
+    .input-card label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      display: block;
+      margin-bottom: 6px;
+    }
+    .input-card input,
+    .input-card textarea,
+    .input-card select {
+      width: 100%;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      color: var(--text);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      padding: 12px 14px;
+      outline: none;
+      transition: border-color 0.2s;
+      margin-bottom: 12px;
+    }
+    .input-card input:focus,
+    .input-card textarea:focus {
+      border-color: var(--accent);
+    }
+    .input-card textarea { resize: vertical; min-height: 80px; }
+
+    .row { display: flex; gap: 10px; }
+    .row > * { flex: 1; }
+
+    /* BUTTONS */
+    .btn {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 12px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, var(--accent), var(--accent2));
+      color: white;
+    }
+    .btn-primary:active { transform: scale(0.97); }
+    .btn-alarm {
+      background: linear-gradient(135deg, var(--alarm), #ff6688);
+      color: white;
+    }
+
+    /* NOTE CARDS */
+    .notes-list { display: flex; flex-direction: column; gap: 12px; }
+    .note-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      position: relative;
+      transition: border-color 0.2s;
+    }
+    .note-card:hover { border-color: var(--accent); }
+    .note-card.has-alarm { border-left: 3px solid var(--alarm); }
+    .note-card.done { opacity: 0.5; }
+    .note-card.done .note-text { text-decoration: line-through; }
+
+    .note-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+    .note-text { font-size: 16px; font-weight: 500; line-height: 1.4; flex: 1; }
+    .note-actions { display: flex; gap: 6px; margin-left: 10px; }
+    .icon-btn {
+      background: var(--surface);
+      border: none;
+      border-radius: 8px;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 16px;
+      transition: background 0.2s;
+    }
+    .icon-btn:active { background: var(--border); }
+    .note-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
+    .meta-tag {
+      font-size: 11px;
+      padding: 3px 8px;
+      border-radius: 20px;
+      background: var(--surface);
+      color: var(--muted);
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .meta-tag.alarm-tag { color: var(--alarm); border-color: var(--alarm); background: rgba(255,68,102,0.1); }
+    .meta-tag.date-tag { color: var(--accent2); border-color: rgba(255,179,71,0.3); }
+
+    /* TOMORROW VIEW */
+    .tomorrow-hero {
+      background: linear-gradient(135deg, rgba(255,107,53,0.15), rgba(255,179,71,0.1));
+      border: 1px solid rgba(255,107,53,0.3);
+      border-radius: var(--radius);
+      padding: 20px;
+      margin-bottom: 20px;
+      text-align: center;
+    }
+    .tomorrow-date {
+      font-family: 'DM Serif Display', serif;
+      font-size: 32px;
+      background: linear-gradient(90deg, var(--accent), var(--accent2));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .tomorrow-day { font-size: 14px; color: var(--muted); margin-top: 4px; }
+    .count-badge {
+      display: inline-block;
+      margin-top: 12px;
+      background: var(--accent);
+      color: white;
+      border-radius: 20px;
+      padding: 4px 14px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    /* ALARM RING ANIMATION */
+    .ringing-alarm {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,20,0.95);
+      z-index: 999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      animation: flashRed 0.5s infinite alternate;
+    }
+    @keyframes flashRed {
+      from { background: rgba(10,10,20,0.95); }
+      to { background: rgba(255,50,50,0.12); }
+    }
+    .ring-icon {
+      font-size: 80px;
+      animation: shake 0.4s infinite;
+    }
+    @keyframes shake {
+      0%,100% { transform: rotate(-10deg); }
+      50% { transform: rotate(10deg); }
+    }
+    .ring-label { font-family: 'DM Serif Display', serif; font-size: 24px; text-align: center; }
+    .ring-sub { color: var(--muted); font-size: 14px; }
+    .dismiss-btn {
+      background: var(--alarm);
+      color: white;
+      border: none;
+      border-radius: 50px;
+      padding: 16px 40px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 18px;
+      font-weight: 700;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    /* EMPTY STATE */
+    .empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--muted);
+    }
+    .empty-icon { font-size: 48px; margin-bottom: 12px; }
+    .empty-text { font-size: 15px; }
+
+    /* INSTALL BANNER */
+    .install-banner {
+      background: linear-gradient(135deg, rgba(61,220,132,0.15), rgba(61,220,132,0.05));
+      border: 1px solid rgba(61,220,132,0.3);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 20px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .install-banner .icon { font-size: 24px; }
+    .install-banner .text { flex: 1; font-size: 13px; color: var(--green); }
+    .install-banner .text b { display: block; font-size: 14px; }
+    #installBtn {
+      background: var(--green);
+      color: #0a0f0a;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    /* SETTINGS */
+    .settings-row {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .settings-label { font-size: 15px; font-weight: 500; }
+    .settings-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+    .toggle {
+      width: 48px;
+      height: 26px;
+      border-radius: 13px;
+      background: var(--border);
+      position: relative;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .toggle.on { background: var(--green); }
+    .toggle::after {
+      content: '';
+      position: absolute;
+      top: 3px;
+      left: 3px;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: white;
+      transition: left 0.3s;
+    }
+    .toggle.on::after { left: 25px; }
+
+    .perm-btn {
+      background: var(--accent);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 14px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .perm-status { font-size: 12px; padding: 6px 12px; border-radius: 8px; }
+    .perm-status.granted { background: rgba(61,220,132,0.15); color: var(--green); }
+    .perm-status.denied { background: rgba(255,68,102,0.15); color: var(--alarm); }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="header-top">
+    <div class="app-title">🔔 NoteAlarm</div>
+    <div class="date-badge" id="todayBadge"></div>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showView('notes')">📝 Notes</button>
+    <button class="tab" onclick="showView('tomorrow')">🌅 Tomorrow</button>
+    <button class="tab" onclick="showView('settings')">⚙️ Settings</button>
+  </div>
+</header>
+
+<!-- NOTES VIEW -->
+<div class="view active" id="view-notes">
+  <div id="installBanner" class="install-banner" style="display:none">
+    <div class="icon">📲</div>
+    <div class="text"><b>Install on your phone!</b>Tap install to add to home screen</div>
+    <button id="installBtn">Install</button>
+  </div>
+
+  <div class="input-card">
+    <div class="section-title">✏️ Add Note</div>
+    <label>Note / Task</label>
+    <textarea id="noteText" placeholder="What do you need to do tomorrow? Write anything…" rows="3"></textarea>
+    <div class="row">
+      <div>
+        <label>Date</label>
+        <input type="date" id="noteDate" />
+      </div>
+      <div>
+        <label>Set Alarm</label>
+        <input type="time" id="noteTime" placeholder="Optional" />
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="addNote()">+ Add Note</button>
+  </div>
+
+  <div class="section-title">📋 All Notes</div>
+  <div class="notes-list" id="notesList"></div>
+</div>
+
+<!-- TOMORROW VIEW -->
+<div class="view" id="view-tomorrow">
+  <div class="tomorrow-hero">
+    <div class="tomorrow-date" id="tomorrowDate"></div>
+    <div class="tomorrow-day" id="tomorrowDay"></div>
+    <div class="count-badge" id="tomorrowCount">0 reminders</div>
+  </div>
+  <div class="section-title">🔔 Tomorrow's Reminders</div>
+  <div class="notes-list" id="tomorrowList"></div>
+</div>
+
+<!-- SETTINGS VIEW -->
+<div class="view" id="view-settings">
+  <div class="section-title">⚙️ Settings</div>
+
+  <div class="settings-row">
+    <div>
+      <div class="settings-label">Notification Permission</div>
+      <div class="settings-sub">Required for alarm notifications</div>
+    </div>
+    <div id="permStatus"></div>
+  </div>
+
+  <div class="settings-row">
+    <div>
+      <div class="settings-label">Alarm Sound</div>
+      <div class="settings-sub">Plays a sound when alarm fires</div>
+    </div>
+    <div class="toggle on" id="soundToggle" onclick="toggleSound()"></div>
+  </div>
+
+  <div class="settings-row">
+    <div>
+      <div class="settings-label">Vibrate on Alarm</div>
+      <div class="settings-sub">Vibrate pattern when alarm fires</div>
+    </div>
+    <div class="toggle on" id="vibrateToggle" onclick="toggleVibrate()"></div>
+  </div>
+
+  <div class="input-card" style="margin-top:20px">
+    <div class="section-title" style="font-size:16px;margin-bottom:12px">⚠️ How to Install on Android</div>
+    <p style="font-size:14px;color:var(--muted);line-height:1.7">
+      1. Open this page in <b style="color:var(--text)">Chrome</b> on your Android phone<br>
+      2. Tap the <b style="color:var(--text)">3-dot menu</b> (top right)<br>
+      3. Tap <b style="color:var(--text)">"Add to Home screen"</b><br>
+      4. Tap <b style="color:var(--text)">Add</b><br>
+      5. The app icon appears on your home screen! ✅
+    </p>
+  </div>
+
+  <button class="btn btn-alarm" style="margin-top:10px" onclick="testAlarm()">🔔 Test Alarm Now</button>
+  <button class="btn" style="background:var(--surface);color:var(--alarm);border:1px solid var(--alarm);margin-top:10px" onclick="clearAllNotes()">🗑️ Clear All Notes</button>
+</div>
+
+<!-- RINGING ALARM OVERLAY -->
+<div class="ringing-alarm" id="alarmOverlay" style="display:none">
+  <div class="ring-icon">🔔</div>
+  <div class="ring-label" id="alarmLabel">Reminder!</div>
+  <div class="ring-sub" id="alarmSub">Time to check your note</div>
+  <button class="dismiss-btn" onclick="dismissAlarm()">✓ Dismiss</button>
+</div>
+
+<script>
+// ── STATE ──────────────────────────────────────────────
+let notes = JSON.parse(localStorage.getItem('notealarm_notes') || '[]');
+let settings = JSON.parse(localStorage.getItem('notealarm_settings') || '{"sound":true,"vibrate":true}');
+let alarmTimers = {};
+let deferredInstall = null;
+let alarmAudio = null;
+
+// ── INIT ───────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', () => {
+  setDateDefaults();
+  renderNotes();
+  renderTomorrow();
+  scheduleAllAlarms();
+  updatePermStatus();
+  applySettings();
+  updateDateBadge();
+  registerSW();
+});
+
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredInstall = e;
+  document.getElementById('installBanner').style.display = 'flex';
+});
+
+document.getElementById('installBtn').addEventListener('click', () => {
+  if (deferredInstall) {
+    deferredInstall.prompt();
+    deferredInstall.userChoice.then(() => {
+      document.getElementById('installBanner').style.display = 'none';
+    });
+  }
+});
+
+function setDateDefaults() {
+  const tomorrow = new Date();
+  tomorrow.setDate(tomorrow.getDate() + 1);
+  document.getElementById('noteDate').value = tomorrow.toISOString().split('T')[0];
+}
+
+function updateDateBadge() {
+  const now = new Date();
+  document.getElementById('todayBadge').textContent = now.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+  const tom = new Date(); tom.setDate(tom.getDate()+1);
+  document.getElementById('tomorrowDate').textContent = tom.toLocaleDateString('en-US', { month:'long', day:'numeric' });
+  document.getElementById('tomorrowDay').textContent = tom.toLocaleDateString('en-US', { weekday:'long', year:'numeric' });
+}
+
+// ── ADD NOTE ───────────────────────────────────────────
+function addNote() {
+  const text = document.getElementById('noteText').value.trim();
+  const date = document.getElementById('noteDate').value;
+  const time = document.getElementById('noteTime').value;
+  if (!text) { alert('Please write something first!'); return; }
+
+  const note = {
+    id: Date.now().toString(),
+    text,
+    date: date || new Date().toISOString().split('T')[0],
+    time: time || null,
+    done: false,
+    created: new Date().toISOString()
+  };
+
+  notes.unshift(note);
+  save();
+  renderNotes();
+  renderTomorrow();
+
+  if (time) scheduleAlarm(note);
+
+  // Reset
+  document.getElementById('noteText').value = '';
+  document.getElementById('noteTime').value = '';
+  setDateDefaults();
+
+  // Request permission
+  if (time && Notification.permission === 'default') {
+    Notification.requestPermission().then(updatePermStatus);
+  }
+}
+
+// ── RENDER ─────────────────────────────────────────────
+function renderNotes() {
+  const list = document.getElementById('notesList');
+  if (!notes.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">📝</div><div class="empty-text">No notes yet. Add one above!</div></div>`;
+    return;
+  }
+  list.innerHTML = notes.map(noteCard).join('');
+}
+
+function renderTomorrow() {
+  const tom = tomorrowStr();
+  const tomNotes = notes.filter(n => n.date === tom);
+  const count = tomNotes.length;
+  document.getElementById('tomorrowCount').textContent = `${count} ${count === 1 ? 'reminder' : 'reminders'}`;
+  const list = document.getElementById('tomorrowList');
+  if (!tomNotes.length) {
+    list.innerHTML = `<div class="empty"><div class="empty-icon">🌅</div><div class="empty-text">Nothing planned for tomorrow yet!</div></div>`;
+    return;
+  }
+  list.innerHTML = tomNotes.map(noteCard).join('');
+}
+
+function tomorrowStr() {
+  const t = new Date(); t.setDate(t.getDate()+1);
+  return t.toISOString().split('T')[0];
+}
+
+function noteCard(n) {
+  const dateLabel = n.date ? formatDate(n.date) : '';
+  const alarmTag = n.time ? `<span class="meta-tag alarm-tag">🔔 ${formatTime(n.time)}</span>` : '';
+  const dateTag = dateLabel ? `<span class="meta-tag date-tag">📅 ${dateLabel}</span>` : '';
+  return `
+    <div class="note-card ${n.time ? 'has-alarm' : ''} ${n.done ? 'done' : ''}" id="note-${n.id}">
+      <div class="note-header">
+        <div class="note-text">${escHtml(n.text)}</div>
+        <div class="note-actions">
+          <button class="icon-btn" onclick="toggleDone('${n.id}')" title="Done">${n.done ? '↩' : '✓'}</button>
+          <button class="icon-btn" onclick="deleteNote('${n.id}')" title="Delete">🗑</button>
+        </div>
+      </div>
+      <div class="note-meta">${dateTag}${alarmTag}</div>
+    </div>`;
+}
+
+function formatDate(str) {
+  if (!str) return '';
+  const d = new Date(str + 'T12:00:00');
+  return d.toLocaleDateString('en-US', { weekday:'short', month:'short', day:'numeric' });
+}
+
+function formatTime(str) {
+  if (!str) return '';
+  const [h, m] = str.split(':');
+  const d = new Date(); d.setHours(+h, +m, 0);
+  return d.toLocaleTimeString('en-US', { hour:'numeric', minute:'2-digit' });
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+// ── ACTIONS ────────────────────────────────────────────
+function toggleDone(id) {
+  const n = notes.find(x => x.id === id);
+  if (n) { n.done = !n.done; save(); renderNotes(); renderTomorrow(); }
+}
+
+function deleteNote(id) {
+  if (alarmTimers[id]) { clearTimeout(alarmTimers[id]); delete alarmTimers[id]; }
+  notes = notes.filter(x => x.id !== id);
+  save();
+  renderNotes();
+  renderTomorrow();
+}
+
+function clearAllNotes() {
+  if (!confirm('Delete all notes?')) return;
+  Object.values(alarmTimers).forEach(clearTimeout);
+  alarmTimers = {};
+  notes = [];
+  save();
+  renderNotes();
+  renderTomorrow();
+}
+
+function save() {
+  localStorage.setItem('notealarm_notes', JSON.stringify(notes));
+}
+
+// ── ALARMS ─────────────────────────────────────────────
+function scheduleAlarm(note) {
+  if (!note.date || !note.time) return;
+  const alarmTime = new Date(`${note.date}T${note.time}:00`);
+  const now = new Date();
+  const ms = alarmTime - now;
+  if (ms <= 0) return; // Past
+
+  if (alarmTimers[note.id]) clearTimeout(alarmTimers[note.id]);
+  alarmTimers[note.id] = setTimeout(() => fireAlarm(note), ms);
+}
+
+function scheduleAllAlarms() {
+  notes.forEach(n => { if (n.time && !n.done) scheduleAlarm(n); });
+}
+
+function fireAlarm(note) {
+  // Show overlay
+  document.getElementById('alarmLabel').textContent = note.text;
+  document.getElementById('alarmSub').textContent = `📅 ${formatDate(note.date)} at ${formatTime(note.time)}`;
+  document.getElementById('alarmOverlay').style.display = 'flex';
+
+  // Sound
+  if (settings.sound) playAlarmSound();
+
+  // Vibrate
+  if (settings.vibrate && navigator.vibrate) {
+    navigator.vibrate([500,200,500,200,500,200,1000]);
+  }
+
+  // Notification
+  if (Notification.permission === 'granted') {
+    new Notification('🔔 NoteAlarm Reminder', {
+      body: note.text,
+      icon: 'icon-192.png',
+      tag: note.id,
+      requireInteraction: true
+    });
+  }
+}
+
+function playAlarmSound() {
+  try {
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+    function beep(t, freq, dur) {
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g); g.connect(ctx.destination);
+      o.frequency.value = freq;
+      o.type = 'sine';
+      g.gain.setValueAtTime(0.4, t);
+      g.gain.exponentialRampToValueAtTime(0.001, t + dur);
+      o.start(t); o.stop(t + dur + 0.01);
+    }
+    const t = ctx.currentTime;
+    for (let i = 0; i < 5; i++) {
+      beep(t + i*0.35, 880, 0.2);
+      beep(t + i*0.35 + 0.15, 1100, 0.15);
+    }
+    alarmAudio = ctx;
+  } catch(e) {}
+}
+
+function dismissAlarm() {
+  document.getElementById('alarmOverlay').style.display = 'none';
+  if (navigator.vibrate) navigator.vibrate(0);
+}
+
+function testAlarm() {
+  fireAlarm({ text: 'This is a test alarm! 🔔', date: new Date().toISOString().split('T')[0], time: '00:00' });
+}
+
+// ── SETTINGS ───────────────────────────────────────────
+function toggleSound() {
+  settings.sound = !settings.sound;
+  document.getElementById('soundToggle').classList.toggle('on', settings.sound);
+  localStorage.setItem('notealarm_settings', JSON.stringify(settings));
+}
+
+function toggleVibrate() {
+  settings.vibrate = !settings.vibrate;
+  document.getElementById('vibrateToggle').classList.toggle('on', settings.vibrate);
+  localStorage.setItem('notealarm_settings', JSON.stringify(settings));
+}
+
+function applySettings() {
+  document.getElementById('soundToggle').classList.toggle('on', settings.sound);
+  document.getElementById('vibrateToggle').classList.toggle('on', settings.vibrate);
+}
+
+function updatePermStatus() {
+  const el = document.getElementById('permStatus');
+  const perm = Notification.permission;
+  if (perm === 'granted') {
+    el.innerHTML = `<span class="perm-status granted">✓ Granted</span>`;
+  } else if (perm === 'denied') {
+    el.innerHTML = `<span class="perm-status denied">✗ Denied</span>`;
+  } else {
+    el.innerHTML = `<button class="perm-btn" onclick="requestPerm()">Allow</button>`;
+  }
+}
+
+function requestPerm() {
+  Notification.requestPermission().then(updatePermStatus);
+}
+
+// ── NAVIGATION ─────────────────────────────────────────
+function showView(name) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('view-' + name).classList.add('active');
+  const tabs = { notes: 0, tomorrow: 1, settings: 2 };
+  document.querySelectorAll('.tab')[tabs[name]].classList.add('active');
+  if (name === 'tomorrow') renderTomorrow();
+}
+
+// ── SERVICE WORKER ─────────────────────────────────────
+function registerSW() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+}
+</script>
+</body>
+</html>
